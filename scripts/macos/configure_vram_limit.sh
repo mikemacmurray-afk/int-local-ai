@@ -2,16 +2,16 @@
 # ==============================================================================
 # configure_vram_limit.sh
 # Raises macOS Apple Silicon Metal wired memory limit (iogpu.wired_limit_mb)
-# for a 48 GB Mac Mini Pro and optionally installs a LaunchDaemon so it persists
-# across reboots.
+# for a 64 GB Mac Mini M4 Pro and installs a persistent LaunchDaemon.
 #
-# Default target: 43008 MB (42 GB) — leaves 6 GB for macOS kernel & daemons.
-# Headless server option: pass 44032 (43 GB) as $1.
+# Default target for 64 GB Mac Mini: 57344 MB (56 GB) — leaves 8 GB for macOS.
+# Headless server option (64 GB):    pass 58368 (57 GB) as $1.
+# Legacy 48 GB Mac Mini option:      pass 43008 (42 GB) as $1.
 # ==============================================================================
 
 set -euo pipefail
 
-LIMIT_MB="${1:-43008}"
+LIMIT_MB="${1:-57344}"
 PLIST_PATH="/Library/LaunchDaemons/com.localai.vramlimit.plist"
 
 if [[ $EUID -ne 0 ]]; then
@@ -51,4 +51,3 @@ launchctl load -w "${PLIST_PATH}" 2>/dev/null || true
 
 echo "==> Verified iogpu.wired_limit_mb is now:"
 sysctl iogpu.wired_limit_mb
-
