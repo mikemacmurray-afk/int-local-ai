@@ -1,0 +1,29 @@
+# OS & Editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Secrets & Environment
+.env
+*.env.local
+*.key
+*.pem
+
+# Local Model Weights & Caches
+models/
+*.gguf
+*.safetensors
+*.mlx
+cache/
+.vllm-mlx/
+

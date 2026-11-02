@@ -1,0 +1,94 @@
+{
+  "hardware_target": {
+    "device": "Apple Mac Mini M4 Pro",
+    "unified_memory_gb": 48,
+    "memory_bandwidth_gbps": 273,
+    "recommended_iogpu_wired_limit_mb": 43008,
+    "headless_iogpu_wired_limit_mb": 44032
+  },
+  "primary_model": {
+    "id": "qwen/qwen3.6-35b-a3b",
+    "architecture": "Hybrid Gated DeltaNet (30 layers) + GQA (10 layers) Sparse MoE (256 experts, 9 active)",
+    "total_parameters": "35B",
+    "active_parameters": "3B",
+    "native_context_length": 262144,
+    "kv_cache_kb_per_token_fp16": 20.48,
+    "kv_cache_kb_per_token_q8_0": 10.75,
+    "recommended_quantizations": {
+      "mlx": "mlx-community/Qwen3.6-35B-A3B-6bit",
+      "gguf": "unsloth/Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf"
+    }
+  },
+  "embedding_model": {
+    "id": "text-embedding-bge-m3",
+    "dimensions": 1024,
+    "notes": "Locked for QDR ChromaDB compatibility (6,207 existing chunks). Pin with --ttl 0."
+  },
+  "workload_profiles": {
+    "qdr_curator_and_query_assist": {
+      "description": "Fast JSON action selection (frame, plan, call, brief), judge_sufficiency, and query reformulation in QDR.",
+      "temperature": 0.2,
+      "top_p": 0.90,
+      "top_k": 20,
+      "min_p": 0.05,
+      "presence_penalty": 0.0,
+      "repetition_penalty": 1.0,
+      "max_tokens": 2048,
+      "context_window": 32768,
+      "chat_template_kwargs": {
+        "enable_thinking": false
+      }
+    },
+    "qdr_expert_and_dids_plsql_coding": {
+      "description": "Deep reasoning over Oracle PL/SQL, APEX 24.1, QDR Mediated Expert DRAFT/CHALLENGE, SOW synthesis, and Cline agent loops.",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "min_p": 0.0,
+      "presence_penalty": 0.1,
+      "repetition_penalty": 1.05,
+      "max_tokens": 16384,
+      "context_window": 131072,
+      "chat_template_kwargs": {
+        "enable_thinking": true,
+        "preserve_thinking": true
+      }
+    },
+    "sgc_route_local_and_policy_eval": {
+      "description": "SGC forbid_egress / route_local upstream completion and P3 AI policy pack extraction.",
+      "temperature": 0.2,
+      "top_p": 0.90,
+      "top_k": 20,
+      "min_p": 0.05,
+      "presence_penalty": 0.0,
+      "repetition_penalty": 1.0,
+      "max_tokens": 8192,
+      "context_window": 65536,
+      "timeout_seconds": 120.0,
+      "chat_template_kwargs": {
+        "enable_thinking": false
+      }
+    },
+    "qdr_vision_figure_describer": {
+      "description": "Multimodal diagram, architecture chart, and APEX screenshot transcription for QDR figure_describer.py.",
+      "temperature": 0.2,
+      "top_p": 0.90,
+      "top_k": 20,
+      "min_p": 0.05,
+      "max_tokens": 1024,
+      "context_window": 32768,
+      "chat_template_kwargs": {
+        "enable_thinking": false
+      }
+    },
+    "dids_inline_autocomplete_twinny": {
+      "description": "Sub-150ms inline FIM ghost-text completion in VS Code via Twinny.",
+      "model": "qwen2.5-coder:3b-base",
+      "temperature": 0.1,
+      "top_p": 0.90,
+      "max_tokens": 256,
+      "context_window": 8192
+    }
+  }
+}
+
