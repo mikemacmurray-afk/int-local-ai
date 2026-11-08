@@ -1,0 +1,234 @@
+model=qwen/qwen3.6-35b-a3b label=q36_base suites=['sgc', 'chat', 'hard', 'qdr', 'code', 'generic', 'tools', 'longctx', 'perf', 'conc'] evidence blocks=26 planted={'billing': 4, 'ontready': 10, 'notifier': 16, 'design': 20}
+
+===== sgc
+  OK       3.8s out=    2 think=    0 [sgc] plain 'YES'
+  OK       0.3s out=    2 think=    0 [sgc] codename 'YES'
+  OK       0.3s out=    2 think=    0 [sgc] plain 'YES'
+  OK       0.3s out=    2 think=    0 [sgc] Afrikaans 'YES'
+  OK       0.6s out=    2 think=    0 [sgc] buried in long email 'YES'
+  OK       0.3s out=    2 think=    0 [sgc] implied 'YES'
+  OK       0.3s out=    2 think=    0 [sgc] plain 'YES'
+  OK       0.3s out=    2 think=    0 [sgc] public deal 'NO'
+  OK       0.3s out=    2 think=    0 [sgc] general 'NO'
+  OK       0.4s out=    2 think=    0 [sgc] injection 'NO'
+  OK       0.3s out=    2 think=    0 [sgc] general 'NO'
+  OK       0.4s out=    2 think=    0 [sgc] false friend 'NO'
+  OK       0.4s out=    2 think=    0 [sgc] false friend 'NO'
+  OK       0.4s out=    2 think=    0 [sgc] public deal 'NO'
+  OK       0.3s out=    2 think=    0 [sgc] unrelated 'NO'
+  OK       0.3s out=    2 think=    0 [sgc] hypothetical 'NO'
+  OK       0.6s out=    2 think=    0 [sgc] long, unrelated 'NO'
+  OK       0.3s out=    2 think=    0 [sgc] plain 'YES'
+  OK       0.3s out=    2 think=    0 [sgc] codename 'YES'
+  OK       0.3s out=    2 think=    0 [sgc] plain 'YES'
+  OK       0.3s out=    2 think=    0 [sgc] Afrikaans 'YES'
+  OK       0.3s out=    2 think=    0 [sgc] buried in long email 'YES'
+  OK       0.3s out=    2 think=    0 [sgc] implied 'YES'
+  OK       0.3s out=    2 think=    0 [sgc] plain 'YES'
+  OK       0.3s out=    2 think=    0 [sgc] public deal 'NO'
+  OK       0.3s out=    2 think=    0 [sgc] general 'NO'
+  OK       0.3s out=    2 think=    0 [sgc] injection 'NO'
+  OK       0.3s out=    2 think=    0 [sgc] general 'NO'
+  OK       0.3s out=    2 think=    0 [sgc] false friend 'NO'
+  OK       0.3s out=    2 think=    0 [sgc] false friend 'NO'
+  OK       0.3s out=    2 think=    0 [sgc] public deal 'NO'
+  OK       0.3s out=    2 think=    0 [sgc] unrelated 'NO'
+  OK       0.3s out=    2 think=    0 [sgc] hypothetical 'NO'
+  OK       0.2s out=    2 think=    0 [sgc] long, unrelated 'NO'
+
+===== chat
+  OK       0.2s out=    4 think=    0 [chat] off/fact 
+  OK       1.0s out=   50 think=    0 [chat] off/json extraction 
+  OK       0.9s out=   42 think=    0 [chat] off/summary 
+  OK       0.2s out=    2 think=    0 [chat] off/trick question 
+  WRONG    0.2s out=    2 think=    0 [chat] off/ordering puzzle 
+  WRONG    0.2s out=    2 think=    0 [chat] off/liar puzzle 
+  WRONG    0.3s out=    3 think=    0 [chat] off/weekday count 
+  OK      10.0s out=  641 think=    0 [chat] off/crew schedule 
+  OK       0.8s out=   40 think=    0 [chat] off/sql 
+  OK       1.7s out=   91 think=    0 [chat] off/code fix 
+  WRONG    2.0s out=    3 think=    0 [chat] off/count in 6K-token log 
+  OK       0.2s out=    4 think=    0 [chat] off/fact 
+  OK       1.2s out=   62 think=    0 [chat] off/json extraction 
+  OK       0.9s out=   39 think=    0 [chat] off/summary 
+  OK       0.2s out=    2 think=    0 [chat] off/trick question 
+  WRONG    0.2s out=    2 think=    0 [chat] off/ordering puzzle 
+  WRONG    0.3s out=    2 think=    0 [chat] off/liar puzzle 
+  WRONG    0.3s out=    3 think=    0 [chat] off/weekday count 
+  OK      14.0s out=  900 think=    0 [chat] off/crew schedule 
+  OK       1.0s out=   46 think=    0 [chat] off/sql 
+  OK       1.7s out=   91 think=    0 [chat] off/code fix 
+  WRONG    0.5s out=    3 think=    0 [chat] off/count in 6K-token log 
+  OK       0.8s out=   30 think=    0 [chat] off+working/fact 
+  WRONG    2.7s out=  160 think=    0 [chat] off+working/json extraction 
+  OK       0.9s out=   38 think=    0 [chat] off+working/summary 
+  OK       1.0s out=   43 think=    0 [chat] off+working/trick question 
+  OK       2.0s out=  108 think=    0 [chat] off+working/ordering puzzle 
+  OK       4.0s out=  242 think=    0 [chat] off+working/liar puzzle 
+  OK       2.1s out=  119 think=    0 [chat] off+working/weekday count 
+  OK       9.6s out=  607 think=    0 [chat] off+working/crew schedule 
+  OK       1.7s out=   85 think=    0 [chat] off+working/sql 
+  OK       2.4s out=  135 think=    0 [chat] off+working/code fix 
+  OK      15.5s out=  845 think=    0 [chat] off+working/count in 6K-token log 
+  OK       0.8s out=   28 think=    0 [chat] off+working/fact 
+  OK       3.6s out=  209 think=    0 [chat] off+working/json extraction 
+  OK       1.9s out=   68 think=    0 [chat] off+working/summary 
+  OK       0.9s out=   33 think=    0 [chat] off+working/trick question 
+  OK       2.4s out=  105 think=    0 [chat] off+working/ordering puzzle 
+  OK       2.9s out=  153 think=    0 [chat] off+working/liar puzzle 
+  OK       3.4s out=  195 think=    0 [chat] off+working/weekday count 
+  OK       9.1s out=  523 think=    0 [chat] off+working/crew schedule 
+  OK       1.8s out=   83 think=    0 [chat] off+working/sql 
+  OK       2.4s out=  133 think=    0 [chat] off+working/code fix 
+  OK      12.6s out=  740 think=    0 [chat] off+working/count in 6K-token log 
+  OK       5.1s out=  301 think=  295 [chat] on8k/fact 
+  OK      20.9s out= 1334 think= 1271 [chat] on8k/json extraction 
+  OK      21.5s out= 1326 think= 1278 [chat] on8k/summary 
+  OK       4.1s out=  237 think=  233 [chat] on8k/trick question 
+  OK       6.2s out=  374 think=  370 [chat] on8k/ordering puzzle 
+  OK      19.4s out= 1235 think= 1231 [chat] on8k/liar puzzle 
+  OK      24.8s out= 1589 think= 1584 [chat] on8k/weekday count 
+  OK      80.1s out= 5114 think= 4641 [chat] on8k/crew schedule 
+  OK      17.2s out= 1091 think= 1048 [chat] on8k/sql 
+  WRONG   22.8s out= 1461 think= 1375 [chat] on8k/code fix 
+  OK      50.0s out= 3088 think= 3083 [chat] on8k/count in 6K-token log 
+
+===== hard
+  WRONG   24.2s out= 1023 think=    0 [hard] off/count in 20K-token log 
+  OK       1.0s out=   50 think=    0 [hard] off/sql window function 
+  WRONG    0.3s out=    2 think=    0 [hard] off/scheduling puzzle 
+  OK       1.5s out=   63 think=    0 [hard] off/subtle bug 
+  OK       8.4s out=  490 think=    0 [hard] off/invoice with VAT 
+  WRONG    0.4s out=   11 think=    0 [hard] off/notice period 
+  WRONG   17.4s out= 1023 think=    0 [hard] off/count in 20K-token log 
+  OK       1.6s out=   87 think=    0 [hard] off/sql window function 
+  WRONG    0.3s out=    2 think=    0 [hard] off/scheduling puzzle 
+  OK       1.3s out=   63 think=    0 [hard] off/subtle bug 
+  OK       8.5s out=  491 think=    0 [hard] off/invoice with VAT 
+  WRONG    0.4s out=   11 think=    0 [hard] off/notice period 
+  WRONG   24.0s out= 1023 think=    0 [hard] off+working/count in 20K-token log 
+  OK       4.7s out=  277 think=    0 [hard] off+working/sql window function 
+  OK       6.4s out=  394 think=    0 [hard] off+working/scheduling puzzle 
+  OK       4.6s out=  283 think=    0 [hard] off+working/subtle bug 
+  OK       4.7s out=  288 think=    0 [hard] off+working/invoice with VAT 
+  WRONG    5.5s out=  337 think=    0 [hard] off+working/notice period 
+  WRONG   17.4s out= 1023 think=    0 [hard] off+working/count in 20K-token log 
+  OK       5.0s out=  302 think=    0 [hard] off+working/sql window function 
+  OK       9.0s out=  547 think=    0 [hard] off+working/scheduling puzzle 
+  OK       4.5s out=  261 think=    0 [hard] off+working/subtle bug 
+  OK       4.9s out=  272 think=    0 [hard] off+working/invoice with VAT 
+  OK      12.6s out=  717 think=    0 [hard] off+working/notice period 
+  OUT    130.3s out= 8191 think= 8191 [hard] on8k/sql window function 
+  OK      15.8s out= 1007 think= 1003 [hard] on8k/scheduling puzzle 
+  OK      27.9s out= 1773 think= 1708 [hard] on8k/subtle bug 
+  OK      37.5s out= 2363 think= 2072 [hard] on8k/invoice with VAT 
+  OK      69.5s out= 4430 think= 4417 [hard] on8k/notice period 
+
+===== qdr
+  OK      14.0s out=  166 think=    0 [qdr] digest billing need=True bad=False json=True prompt=20496
+  OK      13.7s out=  163 think=    0 [qdr] digest ontready absent status=no invented=False json=True prompt=20495
+  OK      16.1s out=  312 think=    0 [qdr] digest notifier list found=6/6 extra=[] json=True prompt=20488
+  OK       2.5s out=  134 think=    0 [qdr] next step calls=['structural_graph'] json=True prompt=484
+  OK      13.0s out=  136 think=    0 [qdr] expert labelled answer tags=5 key=True words=75
+  OK       3.0s out=  142 think=    0 [qdr] digest billing need=True bad=False json=True prompt=20496
+  OK       3.2s out=  157 think=    0 [qdr] digest ontready absent status=no invented=False json=True prompt=20495
+  OK       5.4s out=  291 think=    0 [qdr] digest notifier list found=6/6 extra=[] json=True prompt=20488
+  OK       2.4s out=  133 think=    0 [qdr] next step calls=['structural_graph'] json=True prompt=484
+  OK       3.1s out=  151 think=    0 [qdr] expert labelled answer tags=7 key=True words=72
+
+===== code
+  OK       4.6s out=  280 think=    0 [code] off/parse_duration 
+  OK       3.5s out=  178 think=    0 [code] off/merge_intervals 
+  OK       6.5s out=  373 think=    0 [code] off/lru_cache 
+  OK       2.1s out=   89 think=    0 [code] off/top_k_words 
+  WRONG   14.9s out=  897 think=    0 [code] off/sa_id_valid 
+  OK       5.0s out=  272 think=    0 [code] off/rle 
+  OK       4.2s out=  225 think=    0 [code] off/flatten_dict 
+  OK       2.1s out=   87 think=    0 [code] off/binary_search_fix 
+  OK       1.5s out=   50 think=    0 [code] off/running_total_sql 
+  OK       4.7s out=  284 think=    0 [code] off/class_refactor 
+  OK       4.3s out=  250 think=    0 [code] off/parse_duration 
+  OK       3.0s out=  153 think=    0 [code] off/merge_intervals 
+  OK       6.5s out=  405 think=    0 [code] off/lru_cache 
+  OK       2.1s out=   89 think=    0 [code] off/top_k_words 
+  OK       8.7s out=  531 think=    0 [code] off/sa_id_valid 
+  OK       4.7s out=  268 think=    0 [code] off/rle 
+  OK       3.7s out=  228 think=    0 [code] off/flatten_dict 
+  OK       1.8s out=   87 think=    0 [code] off/binary_search_fix 
+  OK       1.8s out=   80 think=    0 [code] off/running_total_sql 
+  OK       5.1s out=  314 think=    0 [code] off/class_refactor 
+  OK      92.0s out= 5851 think= 5681 [code] on8k/parse_duration 
+  OK      35.4s out= 2244 think= 2117 [code] on8k/merge_intervals 
+  OK      45.8s out= 2892 think= 2746 [code] on8k/lru_cache 
+  OK      22.6s out= 1372 think= 1280 [code] on8k/top_k_words 
+  OK     116.8s out= 7354 think= 7067 [code] on8k/sa_id_valid 
+  OK      35.0s out= 2203 think= 2015 [code] on8k/rle 
+  OK      53.5s out= 3393 think= 3284 [code] on8k/flatten_dict 
+  OUT    133.3s out= 8191 think= 8191 [code] on8k/binary_search_fix 
+  OK      26.7s out= 1388 think= 1344 [code] on8k/running_total_sql 
+  OK      80.0s out= 3909 think= 3657 [code] on8k/class_refactor 
+
+===== generic
+  OK       2.9s out=   95 think=    0 [generic] if: 3 bullets 
+  OK       0.8s out=   43 think=    0 [generic] if: <50 words no commas 
+  OK       0.9s out=   43 think=    0 [generic] if: lowercase 
+  OK       0.8s out=   46 think=    0 [generic] if: word twice 
+  OK       1.2s out=   69 think=    0 [generic] if: title + ending 
+  OK      23.2s out=  250 think=    0 [generic] if: two paragraphs *** 
+  OK       2.6s out=   90 think=    0 [generic] extract nulls 
+  OK       1.7s out=   82 think=    0 [generic] vendor vs measured 
+  OK       1.5s out=   72 think=    0 [generic] meeting corrections 
+  OK       0.8s out=   30 think=    0 [generic] grounded unknown 
+  OK       1.6s out=   93 think=    0 [generic] if: 3 bullets 
+  OK       0.8s out=   35 think=    0 [generic] if: <50 words no commas 
+  OK       1.0s out=   51 think=    0 [generic] if: lowercase 
+  WRONG    1.0s out=   51 think=    0 [generic] if: word twice 
+  OK       1.3s out=   68 think=    0 [generic] if: title + ending 
+  OK       3.3s out=  203 think=    0 [generic] if: two paragraphs *** 
+  OK       1.6s out=   90 think=    0 [generic] extract nulls 
+  OK       1.5s out=   76 think=    0 [generic] vendor vs measured 
+  OK       1.6s out=   86 think=    0 [generic] meeting corrections 
+  OK       0.8s out=   30 think=    0 [generic] grounded unknown 
+
+===== tools
+  OK       5.5s out=   33 think=    0 [tools] single call [('get_ticket', {'ticket_id': 'INC-20931'})]
+  OK       1.8s out=   58 think=    0 [tools] parallel calls [('get_ticket', {'ticket_id': 'INC-1'}), ('get_ticket', {'ticket_id': 'INC-2'})]
+  OK       0.3s out=    4 think=    0 [tools] no tool needed []
+  OK       1.2s out=   55 think=    0 [tools] enum + int args [('create_incident', {'region': 'Durban', 'severity': 2, 'summary': 'core switch fan failu
+  OK       1.4s out=   64 think=    0 [tools] arg formatting [('schedule_change', {'date': '2026-11-21', 'start': '22:00', 'hours': 3.5})]
+  OK       0.8s out=   32 think=    0 [tools] right tool [('search_docs', {'query': 'Polokwane core router failover procedure'})]
+  OK       1.0s out=   48 think=    0 [tools] single call [('get_ticket', {'ticket_id': 'INC-20931'})]
+  OK       1.3s out=   58 think=    0 [tools] parallel calls [('get_ticket', {'ticket_id': 'INC-1'}), ('get_ticket', {'ticket_id': 'INC-2'})]
+  OK       0.3s out=    4 think=    0 [tools] no tool needed []
+  OK       1.2s out=   55 think=    0 [tools] enum + int args [('create_incident', {'region': 'Durban', 'severity': 2, 'summary': 'core switch fan failu
+  OK       1.4s out=   64 think=    0 [tools] arg formatting [('schedule_change', {'date': '2026-11-21', 'start': '22:00', 'hours': 3.5})]
+  OK       0.8s out=   32 think=    0 [tools] right tool [('search_docs', {'query': 'Polokwane core router failover procedure'})]
+
+===== longctx
+  OK       6.1s out=   29 think=    0 [longctx] 8K prompt=11890 ttft=5.579 prefill=2131 tok/s decode=64
+  OK      13.3s out=   33 think=    0 [longctx] 16K prompt=23998 ttft=12.551 prefill=1912 tok/s decode=60
+  OK      31.7s out=   32 think=    0 [longctx] 32K prompt=47916 ttft=30.885 prefill=1551 tok/s decode=53
+  WRONG    0.6s out=    0 think=    0 [longctx] 60K prompt=0 ttft=None prefill=None tok/s decode=None
+
+===== perf
+  OK      11.0s out=  699 think=    0 [perf] decode short tps=64.8 ttft=0.18
+  OK      10.9s out=  699 think=    0 [perf] decode short tps=64.7 ttft=0.164
+  OK      11.0s out=  699 think=    0 [perf] decode short tps=64.6 ttft=0.161
+
+===== conc
+  conc=1: 499 tokens in 7.9s => aggregate 62.9 tok/s; per-request server tps [65]
+  conc=2: 998 tokens in 10.8s => aggregate 92.4 tok/s; per-request server tps [49, 49]
+  conc=4: 1996 tokens in 17.4s => aggregate 115.0 tok/s; per-request server tps [34, 34, 34, 34]
+  head-of-line: meaning checks during a 30K prefill took [0.44, 27.14, 0.57, 3.06]s; big request 36.1s
+
+===== SUMMARY q36_base
+  sgc       34/34       14s
+  chat      45/55      413s
+  hard      19/29      484s
+  qdr       10/10       76s
+  code      28/30      810s
+  generic   19/20       51s
+  tools     12/12       17s
+  longctx    3/4        52s
+  perf       3/3        33s
+  conc       3/3        75s

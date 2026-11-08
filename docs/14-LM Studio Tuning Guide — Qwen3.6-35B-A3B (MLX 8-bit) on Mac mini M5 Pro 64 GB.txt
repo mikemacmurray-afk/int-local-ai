@@ -1,0 +1,289 @@
+# LM Studio Tuning Guide — Qwen3.6-35B-A3B (MLX 8-bit) on Mac mini M5 Pro 64 GB
+
+**Target system:** Mac mini, Apple M5 Pro (16- or 20-core GPU, Neural Accelerators in every GPU core), 64 GB unified memory, 307 GB/s memory bandwidth, macOS 27.2
+**Model:** `qwen/qwen3.6-35b-a3b`, MLX 8-bit (37.75 GB), Mixture-of-Experts, 35B total / ~3B active per token, 262K native context, vision-capable
+**Goal:** fastest prefill (prompt reading) plus fastest decode (output generation) without giving up quality
+
+---
+
+## 0. How this differs from tuning on your Windows laptop
+
+Many of the levers in your existing tuning system **don't exist or don't matter** on the MLX engine. Remove them from the test matrix for this Mac:
+
+| Windows / llama.cpp setting | On MLX (Apple Silicon) |
+|---|---|
+| GPU offload layers (`-ngl`) | **N/A.** Unified memory: the whole model is always "on the GPU". |
+| CPU thread count | **Irrelevant.** Inference runs on the GPU via Metal. |
+| Flash Attention toggle | **N/A in the MLX engine.** MLX uses its own fused attention kernels. |
+| mmap / mlock | **N/A.** MLX loads weights into unified memory directly. |
+| Batch size / ubatch | **Not exposed.** MLX manages prefill chunking internally. |
+| VRAM vs RAM split, `--n-cpu-moe`, expert offload | **N/A.** There's one memory pool. |
+| CUDA/driver versions | Replaced by **LM Studio's MLX runtime version** (see §1). |
+
+What **does** matter on this Mac:
+1. MLX runtime version (Neural Accelerator support)
+2. The macOS GPU memory limit
+3. Context length and KV cache settings
+4. Sampling parameters (they affect output length, which is often the biggest "speed" factor)
+5. Thinking on or off
+6. Concurrency / parallel requests (server use)
+7. Speculative decoding (test it; it's not guaranteed to help)
+
+---
+
+## 1. Runtime and app setup (do this first)
+
+### 1.1 Keep the MLX runtime current
+- **LM Studio ? Settings (?,) ? Runtime** (or **Developer ? Runtimes**): select the **MLX** runtime and update it to the latest version.
+- **Why:** prefill speed on the M5 depends on MLX using the GPU's **Neural Accelerators** (Metal 4 tensor ops). On the M5 these give roughly **3–4× faster prefill** than older MLX builds. An outdated runtime silently leaves this on the table.
+- Also keep **LM Studio itself** updated. There were model-load regressions on macOS 27.0 that later builds fixed.
+
+### 1.2 Pick the right engine for the model
+- In **My Models**, confirm the model shows the **MLX** badge, not GGUF.
+- The GGUF Q8_0 build (37.81 GB) runs on llama.cpp's Metal backend. It's fine, but it **doesn't** get the full MLX Neural Accelerator prefill path. Stick with MLX.
+
+### 1.3 Check your GPU core count
+- **Apple menu ? About This Mac ? More Info ? System Report ? Graphics/Displays**: note **16-core** or **20-core** GPU.
+- **Prefill scales with GPU cores. Decode scales with memory bandwidth** (the same 307 GB/s on both).
+- Use this as your baseline when comparing results with published benchmarks.
+
+---
+
+## 2. System-level settings (macOS)
+
+### 2.1 Raise the GPU wired-memory limit
+By default macOS lets the GPU wire roughly **75% of RAM (~48 GB)**. The model (37.75 GB) plus the vision projector, KV cache and activations fits under that, but long contexts get tight.
+
+```bash
+# Allow the GPU to use ~56 GB (leaves ~8 GB for macOS + apps)
+sudo sysctl iogpu.wired_limit_mb=57344
+
+# Check
+sysctl iogpu.wired_limit_mb
+```
+
+- **This resets on reboot.** To make it persistent, add it to a LaunchDaemon, or just re-run it after a restart.
+- **Don't go above ~58 GB.** macOS needs headroom, and starving it causes swapping, which wrecks both prefill and decode.
+- There are community reports of kernel panics from aggressive wired limits under long-running MLX servers. If you ever see an unexpected reboot under heavy load, **back off to 53248 (52 GB)**.
+
+### 2.2 Power and thermals
+- **System Settings ? Energy**: if a **High Power** mode is offered, enable it. Otherwise make sure "Prevent automatic sleeping" is on for long server sessions.
+- Keep the Mac mini's intake/exhaust clear. Sustained prefill is compute-heavy and will throttle if the mini is boxed in.
+
+### 2.3 Keep the GPU and memory free
+- Close GPU-heavy apps (video editors, browsers with many WebGL tabs, other model runners such as Ollama or oMLX) while benchmarking.
+- Watch **Activity Monitor ? Memory ? Memory Pressure**. It must stay **green**; any **swap used** during inference means your context or limit settings are too aggressive.
+
+---
+
+## 3. Model load settings (LM Studio ? My Models ? ? on the model, or the load dialog with ?L)
+
+> Tip: set these as the **per-model defaults** (gear icon in My Models) so every load and every API call uses them. Changing load settings requires a model reload.
+
+### 3.1 Context length — the most important load setting
+
+Qwen3.6-35B-A3B is a **hybrid architecture**: only **10 of its 40 layers use full attention**. The other 30 are linear-attention (Gated DeltaNet) layers with a fixed-size state. So the **KV cache grows much more slowly** than in a normal 35B model, and long contexts are cheap in memory.
+
+| Use case | Recommended context length |
+|---|---|
+| Chat, Q&A, short documents | **32,768** |
+| Document analysis, RAG, Oracle SQL/PLSQL reviews, codebases | **65,536** (sweet spot) |
+| Very long documents / whole-repo agent work | **131,072** (check memory pressure) |
+| Maximum native | 262,144 (only if you need it; test memory first) |
+
+- **Memory isn't the main cost of long context. Speed is.** Decode slows as the context fills. Published M5 Pro results for this model family show TG falling from ~90 tok/s at 1K to ~62 tok/s at 32K and ~43 tok/s at 64K (4-bit). The 8-bit build follows the same curve at lower absolute numbers.
+- **Don't allocate 262K "just in case".** Set what your workload needs.
+- Set the **Context Overflow policy** (chat settings) to **"Truncate middle"** or **"Rolling window"** for long chats, so you don't fail hard at the limit.
+
+### 3.2 KV cache quantization (if your MLX runtime exposes it)
+- Recent LM Studio MLX runtimes offer **KV cache quantization** (an experimental toggle with a bit-width option).
+- **Recommendation: leave it OFF** (full precision) at ?64K context. Because of the hybrid architecture the cache is already small, and quantizing it trades quality for memory you don't need.
+- **Turn it on (8-bit)** only if you push to 128K+ and memory pressure goes yellow. **Avoid 4-bit KV**: it measurably hurts long-context recall and reasoning.
+
+### 3.3 Keep model in memory / unload behaviour
+- **Keep model in memory: ON.** This avoids paging weights out between requests.
+- In **Developer ? Server settings**:
+  - **JIT model loading: ON** if other apps call the API (loads on first request).
+  - **Auto-unload idle models (TTL):** set a long TTL (e.g. 60+ minutes) or disable it, so reloading 37.75 GB doesn't cost you the first-request latency.
+- **Load only one large model at a time.** Two big models (e.g. this one plus Qwen3.8-27B 8-bit, ~67 GB combined) won't fit.
+
+### 3.4 Max concurrent predictions (parallel requests)
+- **Single-user chat:** **1**. Fastest per-response latency.
+- **Agents, batch jobs, or multiple clients hitting the server:** **2–4**. Measured on an M5 Pro with this model at 8-bit, total throughput scales from **64.7 tok/s (1 stream) ? 100.5 (2 streams, 1.55×) ? 132.2 (4 streams, 2.04×)**. Each individual stream gets slower, but the total work done goes up a lot.
+- Each parallel slot needs its own KV cache, so **parallel × context length** is what matters for memory. With 4 slots, cap context at ~32K each.
+
+### 3.5 Seed
+- **Fixed seed (e.g. 42)** for benchmarking and A/B comparisons in your tuning system.
+- **Random (-1)** for normal use.
+
+---
+
+## 4. Inference (sampling) settings — Qwen's official recommendations
+
+Qwen publishes specific sampling presets for Qwen3.6-35B-A3B. **Use them.** Bad sampling settings are the #1 cause of the model "thinking in circles", which makes the model *feel* slow even when tok/s is high.
+
+| Mode / task | Temperature | Top P | Top K | Min P | Presence penalty | Repeat penalty |
+|---|---|---|---|---|---|---|
+| **Thinking — general tasks** | 1.0 | 0.95 | 20 | 0.0 | 1.5 | 1.0 |
+| **Thinking — precise coding (SQL, Python, web)** | 0.6 | 0.95 | 20 | 0.0 | 0.0 | 1.0 |
+| **Non-thinking (instruct) — general** | 0.7 | 0.80 | 20 | 0.0 | 1.5 | 1.0 |
+
+Notes:
+- **Never use temperature 0 (greedy)** with this model. Qwen warns it increases endless repetition.
+- **Presence penalty vs repeat penalty:** these are different. Qwen's recipe uses **presence penalty** (0–2) and leaves **repeat penalty at 1.0**. If the LM Studio chat UI only shows "Repeat Penalty", leave it at 1.0 and set `presence_penalty` through the API or the per-model config. If you still see loops, a **repeat penalty of 1.05–1.1** is a common community fix. Use it sparingly, because it can degrade code.
+- Qwen notes that a higher presence penalty may cause **occasional language mixing** and a slight quality drop. If you see stray Chinese text, lower it toward 1.0.
+
+### Suggested LM Studio presets to create
+Save each as a **Preset** in the right-hand panel of the chat view so you can switch in one click:
+
+1. **`Qwen3.6 — Think (General)`**: 1.0 / 0.95 / 20 / 0.0 / presence 1.5
+2. **`Qwen3.6 — Think (Code/SQL)`**: 0.6 / 0.95 / 20 / 0.0 / presence 0.0. Use this for Oracle SQL tuning and Python work.
+3. **`Qwen3.6 — Fast (No Think)`**: 0.7 / 0.80 / 20 / 0.0 / presence 1.5, thinking **off**
+
+### 4.1 Response length limit (max tokens)
+- **Set a limit.** In thinking mode a runaway loop can generate tens of thousands of tokens.
+- Recommended: **16,384** for chat; **32,768** for hard reasoning/coding; **4,096** for non-thinking quick answers.
+- For agents and automated jobs, **always cap `max_tokens`** so a loop terminates on its own.
+
+---
+
+## 5. Thinking mode — the biggest "real-world speed" lever
+
+Raw tok/s is only half of perceived speed. **The other half is how many tokens the model spends thinking before it answers.**
+
+- Qwen3.6-35B-A3B **thinks by default**.
+- For simple tasks (rewrites, summaries, extraction, classification, quick Q&A), **turn thinking off**. You'll often get the answer **3–10× sooner** at the same tok/s.
+- How to turn it off:
+  - **LM Studio chat:** use the **Thinking / Reasoning toggle** in the chat input area (shown for reasoning-capable models), if present.
+  - **API / chat template:** pass `"chat_template_kwargs": {"enable_thinking": false}`, or append `/no_think` to the user message if the template supports it.
+- **Preserve thinking:** Qwen3.6 can keep earlier turns' reasoning in context (`preserve_thinking`). For multi-turn agent work it improves consistency, but it **costs context and prefill time**. Leave it **off** for chat and **on** only for iterative agentic coding sessions.
+- **Rule of thumb:** use thinking for SQL tuning, debugging and planning; no thinking for everything else.
+
+---
+
+## 6. Speculative decoding (draft model) — test it, don't assume it
+
+LM Studio supports **speculative decoding** with a small draft model on the MLX engine (**Load settings ? Speculative Decoding ? Draft model**).
+
+- The draft model **must use the same tokenizer/vocabulary** (a small Qwen3.5/3.6-family model, e.g. a 0.8B–2B variant, in MLX).
+- **Expect smaller gains than on dense models.** Qwen3.6-35B-A3B only activates ~3B parameters per token, so it's already fast and the draft model's overhead eats much of the benefit. Gains range from roughly **0–25%**, and it can be **slower** on creative/high-temperature output (lower acceptance rate).
+- Works best on **predictable output**: code, SQL, structured JSON, at **lower temperatures**.
+- **Test protocol:** run the same 5–10 prompts with and without the draft model at a fixed seed. Compare tok/s **and** the draft **acceptance rate** (LM Studio shows accepted draft tokens in the stats). Keep it only if you get **>10% gain** on your real workload.
+
+> **Bigger alternative:** the model's native **MTP (multi-token prediction)** speculative decoding gives **~1.3–1.6×** decode speed-ups, but it isn't available in LM Studio today. It needs **oMLX** with an `-mtp` model build. Consider it once your LM Studio baseline is established.
+
+---
+
+## 7. Vision (images) — prefill cost
+
+- The model accepts images. **Each image becomes hundreds to a few thousand tokens of prefill.**
+- With prefill at ~1,300–2,000 tok/s, a large image adds roughly **0.5–2 s** before the first token.
+- For screenshots and documents, **downscale images** to the smallest resolution that keeps text readable (e.g. ?1,280 px on the long edge) for a meaningful time-to-first-token improvement.
+
+---
+
+## 8. Prompt engineering for prefill speed
+
+Prefill is fast on the M5 Pro, but it isn't free. Tactics:
+
+- **Reuse the same system prompt and keep it first.** LM Studio's MLX engine reuses the **prompt cache** for an identical prefix, so follow-up turns only prefill the new tokens. Changing the system prompt between turns invalidates the cache.
+- **Put stable content (documents, schema, code) early and the changing question last.** That maximizes the cached prefix across repeated questions about the same material.
+- **Trim tool/MCP definitions.** Agent tool schemas can add thousands of tokens of prefill on every call.
+- **Batch questions** about the same document into one prompt rather than re-sending the document.
+
+---
+
+## 9. Benchmark protocol (for your tuning system)
+
+### 9.1 Expected baseline on this Mac (Qwen3.6-35B-A3B 8-bit, MLX)
+
+From community oMLX benchmarks on an **M5 Pro 20-core, 64 GB, 8-bit**:
+
+| Prompt size | Prefill (tok/s) | Decode (tok/s) | Time to first token |
+|---|---|---|---|
+| ~1K tokens | ~1,310 | ~64.7 | ~0.8 s |
+| ~4K tokens | ~2,081 | ~63.3 | ~2 s |
+
+- A **16-core** M5 Pro will show **lower prefill** (fewer GPU cores) but **similar decode**.
+- LM Studio may land **5–15% below** oMLX's numbers. That's normal.
+- If you're **far below** these numbers, check: MLX runtime version, memory pressure/swap, other GPU apps, thermal throttling.
+
+### 9.2 Test matrix
+
+| Variable | Values to test |
+|---|---|
+| Context length (load) | 32K, 64K, 128K |
+| Prompt size | 1K, 4K, 16K, 32K tokens |
+| Thinking | on / off |
+| Sampling preset | General / Code / Fast |
+| Parallel predictions | 1, 2, 4 |
+| Draft model | none / small Qwen draft |
+| KV cache quantization | off / 8-bit (only at ?128K) |
+
+### 9.3 Metrics to record
+- **Time to first token (TTFT)**: prefill performance
+- **Decode tok/s**: generation performance
+- **Total tokens generated**: thinking verbosity (often the hidden cost)
+- **Wall-clock time to final answer**: what the user actually feels
+- **Peak memory / memory pressure colour / swap used**
+- **Draft acceptance rate** (when using speculative decoding)
+- **Quality score** on your own task set (e.g. correct SQL rewrites, passing test cases)
+
+### 9.4 Tools
+```bash
+# LM Studio CLI (ships with LM Studio; run once from the app: Developer ? Install lms)
+lms ps                      # loaded models, context, parallel slots
+lms load qwen/qwen3.6-35b-a3b --context-length 65536
+lms server start
+lms log stream              # live request logs incl. timing stats
+
+# Quick API timing test (OpenAI-compatible endpoint)
+time curl -s http://127.0.0.1:1234/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "qwen/qwen3.6-35b-a3b",
+    "messages": [{"role":"user","content":"Explain Oracle 19c adaptive cursor sharing in 200 words."}],
+    "temperature": 0.7, "top_p": 0.8, "top_k": 20, "presence_penalty": 1.5,
+    "max_tokens": 1024,
+    "chat_template_kwargs": {"enable_thinking": false}
+  }' | python3 -c "import sys,json; r=json.load(sys.stdin); print(r['usage']); print(r.get('stats',''))"
+```
+LM Studio's REST responses include a `stats` block (tokens/s, time to first token) that your tuning system can parse directly.
+
+---
+
+## 10. Recommended starting configuration (summary)
+
+| Setting | Value |
+|---|---|
+| Engine | MLX (latest runtime) |
+| GPU wired limit | `sudo sysctl iogpu.wired_limit_mb=57344` |
+| Context length | **65,536** (32,768 for pure chat) |
+| KV cache quantization | Off (8-bit only if ?128K) |
+| Keep model in memory | On |
+| Max concurrent predictions | 1 (chat) / 2–4 (agents, batch) |
+| Seed | Fixed for testing, random for use |
+| Default preset | **Think (Code/SQL)**: temp 0.6, top_p 0.95, top_k 20, min_p 0, presence 0 |
+| Quick-task preset | **Fast (No Think)**: temp 0.7, top_p 0.8, top_k 20, min_p 0, presence 1.5 |
+| Max response tokens | 16K (chat) / 32K (hard reasoning) / 4K (no-think) |
+| Thinking | Off for simple tasks, on for SQL tuning, debugging and planning |
+| Speculative decoding | Off by default; enable only if your benchmark shows >10% gain |
+| Server TTL | Long (?60 min) or disabled |
+
+---
+
+## 11. Troubleshooting quick reference
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Model thinks in circles / never answers | Wrong sampling, temp 0, low presence penalty | Use Qwen's presets; presence 1.0–1.5; cap max tokens |
+| Stray Chinese characters in output | Presence penalty too high | Lower to 1.0 |
+| Prefill much slower than ~1,300–2,000 tok/s | Old MLX runtime, swap, other GPU apps | Update runtime; check memory pressure; close apps |
+| Decode drops sharply during a long chat | Context filling up (expected) | Start a new chat; lower context; use truncate-middle |
+| Load fails / "Operation canceled" | macOS 27.x + outdated LM Studio, or GPU limit too low | Update LM Studio; re-run the `sysctl` command |
+| Yellow/red memory pressure | Context × parallel too high | Reduce context or parallel slots; enable 8-bit KV |
+| First request after idle is slow | Model was unloaded (TTL) | Lengthen or disable TTL; keep model in memory |
+
+---
+
+*Sources: Qwen3.6-35B-A3B model card (sampling recommendations, via ModelScope mirror); oMLX community benchmarks for M5 Pro (omlx.ai); Apple M5 Pro specifications; MacStories / Creative Strategies on M5 Neural Accelerators; LM Studio documentation and bug tracker. Figures for your exact machine may differ, so treat §9.1 as a baseline to verify, not a guarantee.*
