@@ -105,6 +105,7 @@ Also seen: LM Studio's prompt-cache disk store was full (16,999 of 17,000 MiB, 1
 - **Thinking switch.** On first load, `reasoning_effort: "none"` was **ignored** by the distill (it still thought, about 50 tokens even for one-word answers). `chat_template_kwargs.enable_thinking`, `enable_thinking`, `reasoning.effort` and `reasoning_effort: "minimal"` were ignored too.
   - **Cause:** LM Studio only maps `reasoning_effort` onto a model whose `model.yaml` declares an `enableThinking` custom field. The server log warned "No valid custom reasoning fields found in model …".
   - **Fix:** added `~/.lmstudio/hub/models/local/qwen3.8-35b-a3b-distill/{manifest.json,model.yaml}`, mirroring Qwen3.6's definition, and loaded the model as `local/qwen3.8-35b-a3b-distill`. After that, `reasoning_effort: "none"` gives 0 thinking tokens.
+  - **Update 2026-11-09:** after a re-download, the definition was recreated as **`local/qwen3.8-distill-thinkswitch`** by [scripts/lmstudio/install_distill_definition.sh](../scripts/lmstudio/install_distill_definition.sh). The switch was re-tested and still gives 0 thinking tokens when off. Callers should request this name; the raw download name has no switch and JIT-loads a second copy.
   - **Without this, SGC's meaning checks would return empty on the distill.**
 - **MTP head.** The build includes MTP weights (42 tensors). The lmstudio-community Qwen3.6 build has none. See §7.4.
 
@@ -350,7 +351,7 @@ Model swap on the Mac:
 
 ```bash
 lms unload qwen/qwen3.6-35b-a3b
-lms load local/qwen3.8-35b-a3b-distill -c 65536 --parallel 4 --identifier distill -y
+lms load local/qwen3.8-distill-thinkswitch -c 65536 --parallel 4 --identifier distill -y
 # restore
 lms unload distill
 lms load qwen/qwen3.6-35b-a3b -c 65536 --parallel 4 -y
@@ -373,7 +374,7 @@ Log analysis: `parse_lms.py <log...> <out.csv>` turns LM Studio server logs into
 - **Restored:** `qwen/qwen3.6-35b-a3b` loaded with 65,536 context and 4 slots, as before the tests (smoke-tested OK).
 - **Added:**
   - the distill at `~/.lmstudio/models/NovaeonStudio/Qwen3.8-35B-A3B-Distill-oQ8-fp16-mtp/` (39.5 GB, complete);
-  - its LM Studio definition at `~/.lmstudio/hub/models/local/qwen3.8-35b-a3b-distill/`.
+  - its LM Studio definition at `~/.lmstudio/hub/models/local/qwen3.8-distill-thinkswitch/` (renamed 2026-11-09; recreate with `ssh mikem@192.168.3.175 'sh -s' < scripts/lmstudio/install_distill_definition.sh`).
 - **Temporary, safe to delete:** `/tmp/ytv` (transcript tool environment), `/tmp/dl_distill.sh`, `/tmp/dl_distill.log`.
 
 ---
